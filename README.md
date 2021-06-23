@@ -1,3 +1,8 @@
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/xf97/BiAn)
+
+# SmartContractObfuscator
+a new project which hope help blockchain smart contract developers keep source code privacy and safe.
+
 # BiAn(狴犴)
 ![logo](BiAnLogo.png)
 
