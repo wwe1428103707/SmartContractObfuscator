@@ -25,6 +25,8 @@ if machine.lower().startswith(('os', 'win', 'darwin', 'ios')):
     colors = False # Colors shouldn't be displayed in mac & windows
 if not colors:
     end = green = bad = info = ''
+    white = blue = yellow = ''
+    backGreenFrontWhite = backBlueFrontWhite = ''
     start = ' ['
     stop = ']'
 else:
@@ -42,110 +44,110 @@ else:
 
 
 class layoutConfuse:
-	def __init__(self, _filepath, _jsonFile):
-		self.filePath = _filepath
-		self.jsonPath = _jsonFile
-		self.outputFileName = self.getOutputFileName(_filepath)
-		self.solContent = self.getContent(_filepath)
-		self.json = self.getJsonContent(_jsonFile)		
-		self.middleContract = "temp.sol"
-		self.middleJsonAST = "temp.sol_json.ast"
-		self.configPath = "Configuration.json"
-		self.getConfig()
-	
-	def getConfig(self):
-		config = self.getJsonContent(self.configPath)
-		self.featureList = config["activateFunc"]
+    def __init__(self, _filepath, _jsonFile):
+        self.filePath = _filepath
+        self.jsonPath = _jsonFile
+        self.outputFileName = self.getOutputFileName(_filepath)
+        self.solContent = self.getContent(_filepath)
+        self.json = self.getJsonContent(_jsonFile)
+        self.middleContract = "temp.sol"
+        self.middleJsonAST = "temp.sol_json.ast"
+        self.configPath = "Configuration.json"
+        self.getConfig()
 
-	def getContent(self, _filepath):
-		with open(_filepath, "r", encoding = "utf-8") as f:
-			return f.read()
-		return str()
+    def getConfig(self):
+        config = self.getJsonContent(self.configPath)
+        self.featureList = config["activateFunc"]
 
-	def getOutputFileName(self, _filepath):
-		temp = _filepath.split(".")
-		newFileName = temp[0] + "_layout_confuse." + temp[1]
-		return newFileName
+    def getContent(self, _filepath):
+        with open(_filepath, "r", encoding = "utf-8") as f:
+            return f.read()
+        return str()
 
-	def getJsonContent(self, _jsonFile):
-		jsonStr = str()
-		with open(_jsonFile, "r", encoding = "utf-8") as f:
-			jsonStr = f.read()
-		jsonDict = json.loads(jsonStr)
-		return jsonDict
+    def getOutputFileName(self, _filepath):
+        temp = _filepath.split(".")
+        newFileName = temp[0] + "_layout_confuse." + temp[1]
+        return newFileName
 
-	def writeStrToFile(self, _filename, _str, _step):
-		with open(_filename, "w", encoding = "utf-8") as f:
-			f.write(_str)
-		print(("%s" + _step + ".... done" + "%s") % (yellow, end))
+    def getJsonContent(self, _jsonFile):
+        jsonStr = str()
+        with open(_jsonFile, "r", encoding = "utf-8") as f:
+            jsonStr = f.read()
+        jsonDict = json.loads(jsonStr)
+        return jsonDict
 
-	def recompileMiddleContract(self):
-		compileResult = os.popen("solc --ast-json --pretty-json --overwrite " + self.middleContract + " -o .")
-		#print(compileResult.read())
-		print(("%s" + "\rIntermediate contract is being generated." + "%s") % (white, end), end = " ")
-		time.sleep(1.5)
-		print(("%s" + "\rIntermediate contract is being generated....done" + "%s") % (white, end))
-		self.solContent = self.getContent(self.middleContract)
-		self.json = self.getJsonContent(self.middleJsonAST)
+    def writeStrToFile(self, _filename, _str, _step):
+        with open(_filename, "w", encoding = "utf-8") as f:
+            f.write(_str)
+        print(("%s" + _step + ".... done" + "%s") % (yellow, end))
 
-	def isActivate(self, _name):
-		for _dict in self.featureList:
-			try:
-				return _dict[_name][0]
-			except:
-				continue
-		return True
+    def recompileMiddleContract(self):
+        compileResult = os.popen("solc --ast-json --pretty-json --overwrite " + self.middleContract + " -o .")
+        #print(compileResult.read())
+        print(("%s" + "\rIntermediate contract is being generated." + "%s") % (white, end), end = " ")
+        time.sleep(1.5)
+        print(("%s" + "\rIntermediate contract is being generated....done" + "%s") % (white, end))
+        self.solContent = self.getContent(self.middleContract)
+        self.json = self.getJsonContent(self.middleJsonAST)
 
-	def getFeatProb(self, _name):
-		for _dict in self.featureList:
-			try:
-				return _dict[_name][1]
-			except:
-				continue
-		return 1
+    def isActivate(self, _name):
+        for _dict in self.featureList:
+            try:
+                return _dict[_name][0]
+            except:
+                continue
+        return True
 
-	def run(self):
-		print((("%s") + "Start layout confusion:" + ("%s")) % (backGreenFrontWhite, end))
-		nowContent = str()
-		if self.isActivate("deleteComment") and random() < self.getFeatProb("deleteComment"):
-			try:
-				self.DC = deleteComment(self.solContent)
-				nowContent = self.DC.doDelete()
-				#print(nowContent)
-			except:	
-				self.solContent = self.getContent(self.filePath)
-				self.json = self.getJsonContent(self.jsonPath)
-				print(("%s" + "Delete comments...Exception occurs" + "%s") % (bad, end))
-		if self.isActivate("changeFormat"):
-			try:
-				self.CF = changeFormat(nowContent)
-				nowContent = self.CF.doChange(self.getFeatProb("changeFormat"))
-				self.writeStrToFile("temp.sol", nowContent, "Delete comments, disrupt the formatting")
-				self.recompileMiddleContract()
-			except:
-				self.solContent = self.getContent(self.filePath)
-				self.json = self.getJsonContent(self.jsonPath)
-				print(("%s" + "Disrupt the formatting...Exception occurs" + "%s") % (bad, end))
-		if self.isActivate("replaceVarName"):
-			try:
-				self.RVN = replaceVarName(self.solContent, self.json) # RVN is the class that performs "Replace Variable Name" operation
-				nowContent = self.RVN.doReplace(self.getFeatProb("replaceVarName"))
-				self.writeStrToFile(self.outputFileName, nowContent, "Replace variable name")
-			except:
-				self.solContent = self.getContent(self.filePath)
-				self.json = self.getJsonContent(self.jsonPath)
-				print(("%s" + "Replace variable name...Exception occurs" + "%s") % (bad, end))
-		print((("%s") + "Complete layout confusion." + ("%s")) % (backGreenFrontWhite, end))
-		print(("%s" + "Complete layout confusion and data flow confusion! The obfuscation result is stored in file " + ("%s") + "." + ("%s")) % (backBlueFrontWhite, self.outputFileName, end))
+    def getFeatProb(self, _name):
+        for _dict in self.featureList:
+            try:
+                return _dict[_name][1]
+            except:
+                continue
+        return 1
+
+    def run(self):
+        print((("%s") + "Start layout confusion:" + ("%s")) % (backGreenFrontWhite, end))
+        nowContent = str()
+        if self.isActivate("deleteComment") and random() < self.getFeatProb("deleteComment"):
+            try:
+                self.DC = deleteComment(self.solContent)
+                nowContent = self.DC.doDelete()
+            #print(nowContent)
+            except:
+                self.solContent = self.getContent(self.filePath)
+                self.json = self.getJsonContent(self.jsonPath)
+                print(("%s" + "Delete comments...Exception occurs" + "%s") % (bad, end))
+        if self.isActivate("changeFormat"):
+            try:
+                self.CF = changeFormat(nowContent)
+                nowContent = self.CF.doChange(self.getFeatProb("changeFormat"))
+                self.writeStrToFile("temp.sol", nowContent, "Delete comments, disrupt the formatting")
+                self.recompileMiddleContract()
+            except:
+                self.solContent = self.getContent(self.filePath)
+                self.json = self.getJsonContent(self.jsonPath)
+                print(("%s" + "Disrupt the formatting...Exception occurs" + "%s") % (bad, end))
+        if self.isActivate("replaceVarName"):
+            try:
+                self.RVN = replaceVarName(self.solContent, self.json) # RVN is the class that performs "Replace Variable Name" operation
+                nowContent = self.RVN.doReplace(self.getFeatProb("replaceVarName"))
+                self.writeStrToFile(self.outputFileName, nowContent, "Replace variable name")
+            except:
+                self.solContent = self.getContent(self.filePath)
+                self.json = self.getJsonContent(self.jsonPath)
+                print(("%s" + "Replace variable name...Exception occurs" + "%s") % (bad, end))
+        print((("%s") + "Complete layout confusion." + ("%s")) % (backGreenFrontWhite, end))
+        print(("%s" + "Complete layout confusion and data flow confusion! The obfuscation result is stored in file " + ("%s") + "." + ("%s")) % (backBlueFrontWhite, self.outputFileName, end))
 
 
 
 #unit test
 if __name__ == "__main__":
-	if len(sys.argv) != 3:
-		print("wrong parameters.")
-	else:
-		lc = layoutConfuse(sys.argv[1], sys.argv[2])
-		lc.run()
-		#print(dfo.solContent)
+    if len(sys.argv) != 3:
+        print("wrong parameters.")
+    else:
+        lc = layoutConfuse(sys.argv[1], sys.argv[2])
+        lc.run()
+    #print(dfo.solContent)
 

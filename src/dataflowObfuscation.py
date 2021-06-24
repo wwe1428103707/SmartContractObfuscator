@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 '''
 This program is the main program to execute data flow confusion, 
@@ -20,14 +20,15 @@ from scalar2Vector import scalar2Vector
 import time
 from random import random
 
-colors = True # Output should be colored
-machine = sys.platform # Detecting the os of current system
+colors = True  # Output should be colored
+machine = sys.platform  # Detecting the os of current system
 if machine.lower().startswith(('os', 'win', 'darwin', 'ios')):
-    colors = False # Colors shouldn't be displayed in mac & windows
+    colors = False  # Colors shouldn't be displayed in mac & windows
 
 # TODO: 解决Win下因为无法现实色彩导致程序无法执行Print的问题，目前可能通过某个flag来解决
 if not colors:
     end = green = bad = info = ''
+    white = blue = yellow = ''
     start = ' ['
     stop = ']'
 else:
@@ -44,135 +45,147 @@ else:
 
 
 class dataflowObfuscation:
-	def __init__(self, _filepath, _jsonFile):
-		self.filePath = _filepath
-		self.jsonPath = _jsonFile
-		self.outputFileName = self.getOutputFileName(_filepath)
-		self.solContent = self.getContent(_filepath)
-		self.json = self.getJsonContent(_jsonFile)
-		self.middleContract = "temp.sol"
-		self.middleJsonAST = "temp.sol_json.ast"
-		self.configPath = "Configuration.json"
-		self.getConfig()
-		#self.finalContract = _filepath.split(".sol")[0] + "_dataflow_confuse.sol"
+    def __init__(self, _filepath, _jsonFile):
+        self.filePath = _filepath
+        self.jsonPath = _jsonFile
+        self.outputFileName = self.getOutputFileName(_filepath)
+        self.solContent = self.getContent(_filepath)
+        self.json = self.getJsonContent(_jsonFile)
+        self.middleContract = "temp.sol"
+        self.middleJsonAST = "temp.sol_json.ast"
+        self.configPath = "Configuration.json"
+        self.getConfig()
+		# self.finalContract = _filepath.split(".sol")[0] + "_dataflow_confuse.sol"
 
-	def getOutputFileName(self, _filepath):
-		temp = _filepath.split(".sol")
-		newFileName = temp[0] + "_dataflow_confuse.sol"
-		return newFileName
+    def getOutputFileName(self, _filepath):
+        temp = _filepath.split(".sol")
+        newFileName = temp[0] + "_dataflow_confuse.sol"
+        return newFileName
 
-	def getContent(self, _filepath):
-		with open(_filepath, "r", encoding = "utf-8") as f:
-			return f.read()
-		return str()
+    def getContent(self, _filepath):
+        with open(_filepath, "r", encoding="utf-8") as f:
+            return f.read()
+        return str()
 
-	def getJsonContent(self, _jsonFile):
-		jsonStr = str()
-		with open(_jsonFile, "r", encoding = "utf-8") as f:
-			jsonStr = f.read()
-		jsonDict = json.loads(jsonStr)
-		return jsonDict
+    def getJsonContent(self, _jsonFile):
+        jsonStr = str()
+        with open(_jsonFile, "r", encoding="utf-8") as f:
+            jsonStr = f.read()
+        jsonDict = json.loads(jsonStr)
+        return jsonDict
 
-	def writeStrToFile(self, _filename, _str, _step):
-		with open(_filename, "w", encoding = "utf-8") as f:
-			f.write(_str)
-		print(("%s" + _step + ".... done" + "%s") % (yellow, end))
+    def writeStrToFile(self, _filename, _str, _step):
+        with open(_filename, "w", encoding="utf-8") as f:
+            f.write(_str)
+        print(("%s" + _step + ".... done" + "%s") % (yellow, end))
 
-	def recompileMiddleContract(self):
-		compileResult = os.popen("solc --ast-json --pretty-json --overwrite " + self.middleContract + " -o .")
-		#print(compileResult.read())
-		print(("%s" + "\rIntermediate contract is being generated." + "%s") % (white, end), end = " ")
-		time.sleep(1.5)
-		print(("%s" + "\rIntermediate contract is being generated....done" + "%s") % (white, end))
-		self.solContent = self.getContent(self.middleContract)
-		self.json = self.getJsonContent(self.middleJsonAST)
+    def recompileMiddleContract(self):
+        compileResult = os.popen("solc --ast-json --pretty-json --overwrite " + self.middleContract + " -o .")
+		# print(compileResult.read())
+        print(("%s" + "\rIntermediate contract is being generated." + "%s") % (white, end), end=" ")
+        time.sleep(1.5)
+        print(("%s" + "\rIntermediate contract is being generated....done" + "%s") % (white, end))
+        self.solContent = self.getContent(self.middleContract)
+        self.json = self.getJsonContent(self.middleJsonAST)
 
-	def getConfig(self):
-		config = self.getJsonContent(self.configPath)
-		self.featureList = config["activateFunc"]
-		#print(self.featureList)
+    def getConfig(self):
+        config = self.getJsonContent(self.configPath)
+        self.featureList = config["activateFunc"]
+		# print(self.featureList)
 
-	def isActivate(self, _name):
-		for _dict in self.featureList:
-			try:
-				return _dict[_name][0]
-			except:
-				continue
-		return True
+    def isActivate(self, _name):
+        for _dict in self.featureList:
+            try:
+                return _dict[_name][0]
+            except:
+                continue
+        return True
 
-	def getFeatProb(self, _name):
-		for _dict in self.featureList:
-			try:
-				return _dict[_name][1]
-			except:
-				continue
-		return 1
+    def getFeatProb(self, _name):
+        for _dict in self.featureList:
+            try:
+                return _dict[_name][1]
+            except:
+                continue
+        return 1
 
-	def run(self):
-		# print((("%s") + "Start data flow confusion:" + ("%s")) % (backGreenFrontWhite, end))
-		print("Start data flow confusion:")
-		if self.isActivate("local2State"):
-			try:
-				self.L2S = local2State(self.solContent, self.json)
-				nowContent = self.L2S.preProcess()
-				self.writeStrToFile(self.middleContract, nowContent, "Convert local variables to state variables, preprocess")
-				self.recompileMiddleContract()
-				nowContent = self.L2S.resetSolAndJson(self.solContent, self.json)
-				nowContent = self.L2S.doChange(self.getFeatProb("local2State"))
-				self.writeStrToFile(self.middleContract, nowContent, "Convert local variables to state variables")
-				self.recompileMiddleContract()
-			except:
-				#nowContent = solContent
-				self.solContent = self.getContent(self.filePath)
-				self.json = self.getJsonContent(self.jsonPath)
-				print(("%s" + "Convert local variables to state variables...Exception occurs" + "%s") % (bad, end))
-		if self.isActivate("staticDataDynamicGenerate"):
-			self.SDDG = staticDataDynamicGenerate(self.solContent, self.json) #SDDG is a class which is used to convert static literal to dynamic generated data
-			nowContent = self.SDDG.doGenerate(self.getFeatProb("staticDataDynamicGenerate"))
-			self.writeStrToFile(self.middleContract, nowContent, "Dynamically generate static data")
-			self.recompileMiddleContract()
-		if self.isActivate("literal2Exp"):
-			try:
-				self.L2E = literal2Exp(self.solContent, self.json) #L2E is a class which is used to convert integer literal to arithmetic expressions
-				nowContent = self.L2E.doGenerate(self.getFeatProb("literal2Exp"))
-				self.writeStrToFile(self.middleContract, nowContent, "Convert integer literals to arithmetic expressions")
-				self.recompileMiddleContract()
-			except:
-				self.solContent = self.getContent(self.filePath)
-				self.json = self.getJsonContent(self.jsonPath)
-				print(("%s" + "Convert integer literals to arithmetic expressions...Exception occurs" + "%s") % (bad, end))
-		if self.isActivate("splitBoolVariable"):
-			try:
-				self.SBV = splitBoolVariable(self.solContent, self.json)
-				nowContent = self.SBV.doSplit(self.getFeatProb("splitBoolVariable"))
-				self.writeStrToFile(self.middleContract, nowContent, "Split boolean variables")
-				self.recompileMiddleContract()
-			except:
-				self.solContent = self.getContent(self.filePath)
-				self.json = self.getJsonContent(self.jsonPath)
-				print(("%s" + "Split boolean variables...Exception occurs" + "%s") % (bad, end))
-		if self.isActivate("scalar2Vector"):
-			try:
-				#该功能的概率只能设置为0或1
-				self.S2V = scalar2Vector(self.solContent, self.json)
-				if self.getFeatProb("scalar2Vector") != 0:
-					nowContent = self.S2V.doChange(1)
-				else:
-					nowContent = self.S2V.doChange(0)
-				self.writeStrToFile(self.middleContract, nowContent, "Scalar to vector")
-				self.recompileMiddleContract()
-			except:
-				self.solContent = self.getContent(self.filePath)
-				self.json = self.getJsonContent(self.jsonPath)
-				print(("%s" + "Scalar to vector...Exception occurs" + "%s") % (bad, end))
-		print((("%s") + "Complete data flow confusion." + ("%s")) % (backGreenFrontWhite, end))
+    def run(self):
+        if colors:
+            print((("%s") + "Start data flow confusion:" + ("%s")) % (backGreenFrontWhite, end))
+        #
+        else:
+            print("Start data flow confusion:")
+
+        if self.isActivate("local2State"):
+            try:
+                self.L2S = local2State(self.solContent, self.json)
+                nowContent = self.L2S.preProcess()
+                self.writeStrToFile(self.middleContract, nowContent,
+                                    "Convert local variables to state variables, preprocess")
+                self.recompileMiddleContract()
+                nowContent = self.L2S.resetSolAndJson(self.solContent, self.json)
+                nowContent = self.L2S.doChange(self.getFeatProb("local2State"))
+                self.writeStrToFile(self.middleContract, nowContent, "Convert local variables to state variables")
+                self.recompileMiddleContract()
+            except:
+                # nowContent = solContent
+                self.solContent = self.getContent(self.filePath)
+                self.json = self.getJsonContent(self.jsonPath)
+                print(("%s" + "Convert local variables to state variables...Exception occurs" + "%s") % (bad, end))
+        if self.isActivate("staticDataDynamicGenerate"):
+            self.SDDG = staticDataDynamicGenerate(self.solContent,
+                                                  self.json)  # SDDG is a class which is used to convert static literal to dynamic generated data
+            nowContent = self.SDDG.doGenerate(self.getFeatProb("staticDataDynamicGenerate"))
+            self.writeStrToFile(self.middleContract, nowContent, "Dynamically generate static data")
+            self.recompileMiddleContract()
+        if self.isActivate("literal2Exp"):
+            try:
+                self.L2E = literal2Exp(self.solContent,
+                                       self.json)  # L2E is a class which is used to convert integer literal to arithmetic expressions
+                nowContent = self.L2E.doGenerate(self.getFeatProb("literal2Exp"))
+                self.writeStrToFile(self.middleContract, nowContent,
+                                    "Convert integer literals to arithmetic expressions")
+                self.recompileMiddleContract()
+            except:
+                self.solContent = self.getContent(self.filePath)
+                self.json = self.getJsonContent(self.jsonPath)
+                print(("%s" + "Convert integer literals to arithmetic expressions...Exception occurs" + "%s") % (
+                bad, end))
+        if self.isActivate("splitBoolVariable"):
+            try:
+                self.SBV = splitBoolVariable(self.solContent, self.json)
+                nowContent = self.SBV.doSplit(self.getFeatProb("splitBoolVariable"))
+                self.writeStrToFile(self.middleContract, nowContent, "Split boolean variables")
+                self.recompileMiddleContract()
+            except:
+                self.solContent = self.getContent(self.filePath)
+                self.json = self.getJsonContent(self.jsonPath)
+                print(("%s" + "Split boolean variables...Exception occurs" + "%s") % (bad, end))
+        if self.isActivate("scalar2Vector"):
+            try:
+                # 该功能的概率只能设置为0或1
+                self.S2V = scalar2Vector(self.solContent, self.json)
+                if self.getFeatProb("scalar2Vector") != 0:
+                    nowContent = self.S2V.doChange(1)
+                else:
+                    nowContent = self.S2V.doChange(0)
+                self.writeStrToFile(self.middleContract, nowContent, "Scalar to vector")
+                self.recompileMiddleContract()
+            except:
+                self.solContent = self.getContent(self.filePath)
+                self.json = self.getJsonContent(self.jsonPath)
+                print(("%s" + "Scalar to vector...Exception occurs" + "%s") % (bad, end))
+        if colors:
+            print((("%s") + "Complete data flow confusion." + ("%s")) % (backGreenFrontWhite, end))
+        else:
+            print(("%s" + "Complete data flow confusion." + "%s"))
 
 
-#unit test
+# unit test
 if __name__ == "__main__":
-	if len(sys.argv) != 3:
-		print("wrong parameters.")
-	else:
-		dfo = dataflowObfuscation(sys.argv[1], sys.argv[2])
-		dfo.run()
-		#print(dfo.solContent)
+    if len(sys.argv) != 3:
+        print("wrong parameters.")
+    else:
+        dfo = dataflowObfuscation(sys.argv[1], sys.argv[2])
+        dfo.run()
+		# print(dfo.solContent)
