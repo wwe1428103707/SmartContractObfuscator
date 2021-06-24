@@ -36,7 +36,7 @@ else:
 	start = ' \033[1;31m[\033[0m'
 	stop = '\033[1;31m]\033[0m'
 	backGreenFrontWhite = "\033[1;37m\033[42m"
-print ('''%s
-	BiAn v0.9
-	%s''' % (blue, end))
+	print ('''%s
+		BiAn v0.9
+		%s''' % (blue, end))
 main()

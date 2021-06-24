@@ -24,6 +24,8 @@ colors = True # Output should be colored
 machine = sys.platform # Detecting the os of current system
 if machine.lower().startswith(('os', 'win', 'darwin', 'ios')):
     colors = False # Colors shouldn't be displayed in mac & windows
+
+# TODO: 解决Win下因为无法现实色彩导致程序无法执行Print的问题，目前可能通过某个flag来解决
 if not colors:
     end = green = bad = info = ''
     start = ' ['
@@ -107,7 +109,8 @@ class dataflowObfuscation:
 		return 1
 
 	def run(self):
-		print((("%s") + "Start data flow confusion:" + ("%s")) % (backGreenFrontWhite, end))
+		# print((("%s") + "Start data flow confusion:" + ("%s")) % (backGreenFrontWhite, end))
+		print("Start data flow confusion:")
 		if self.isActivate("local2State"):
 			try:
 				self.L2S = local2State(self.solContent, self.json)
